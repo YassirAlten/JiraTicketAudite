@@ -1,8 +1,8 @@
-from rest_framework.views import APIView
+from rest_framework import viewsets
 from .serializer import UserSerializer
 from .models import JiraUser
 
-class UserView(APIView):
+class UserView(viewsets.ModelViewSet):
     queryset=JiraUser.objects.all()
     serializer_class=UserSerializer
     
