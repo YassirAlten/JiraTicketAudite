@@ -2,8 +2,8 @@ from django.db import models
 from users.models import JiraUser
 
 class AssignedUser (models.Model):
-    fullName = models.CharField(max_length=100, null=False, blank=False)
-    email = models.EmailField(max_length=100, null=False, blank=False)
+    fullName = models.CharField(max_length=100, null=True, blank=True)
+    email = models.EmailField(max_length=100, null=True, blank=True)
 
 
 class JiraTicket(models.Model):
@@ -21,7 +21,7 @@ class JiraTicket(models.Model):
 
 class JiraProject(models.Model):
     project_name = models.CharField(max_length=100, null=False, blank=False, unique=True)
-    project_manager = models.ForeignKey(JiraUser, on_delete=models.CASCADE, null=False, blank=False)
+    project_manager = models.ForeignKey(JiraUser, on_delete=models.CASCADE, null=True, blank=True)
 
 class JiraTicketHistory(models.Model):
     ticket = models.ForeignKey(JiraTicket, on_delete=models.CASCADE, null=False, blank=False)

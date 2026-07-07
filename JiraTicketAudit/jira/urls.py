@@ -1,5 +1,7 @@
 from django.urls import path
-from .views import JiraTicketViewSet , HistoryViewSet , ProjectViewSet , AssignedUserViewSet
+from .views import JiraTicketViewSet , HistoryViewSet , ProjectViewSet , AssignedUserViewSet , extractDataFromJson
+from jira import views
+
 urlpatterns = [
     path('', JiraTicketViewSet.as_view({'get': 'list', 'post': 'create'}), name='ticket'),
     path('<int:pk>/', JiraTicketViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='ticket-detail'),
@@ -9,5 +11,5 @@ urlpatterns = [
     path('projects/<int:pk>/', ProjectViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='project-detail'),
     path('assigned_users/', AssignedUserViewSet.as_view({'get': 'list', 'post': 'create'}), name='user'),
     path('assigned_users/<int:pk>/', AssignedUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='user-detail'),
-
+    path('extract/', views.extractDataFromJson, name='extract-data'),
 ]
