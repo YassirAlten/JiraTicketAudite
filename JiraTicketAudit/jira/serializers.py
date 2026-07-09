@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import AssignedUser, JiraTicket, JiraTicketHistory, JiraProject
+from .models import AssignedUser, JiraTicket, JiraTicketHistory, JiraProject , Coefficient
 
 class AssignedUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -16,7 +16,6 @@ class ProjectSerializer(serializers.ModelSerializer):
 
 
 class TicketSerializer(serializers.ModelSerializer):
-    # Correction pour l'utilisateur assigné : accepte l'ID en entrée et le convertit en instance AssignedUser
     assignedUser = serializers.PrimaryKeyRelatedField(
         source='assigned_user', 
         queryset=AssignedUser.objects.all(),
@@ -24,7 +23,6 @@ class TicketSerializer(serializers.ModelSerializer):
         required=False
     )
     
-    # Correction pour le projet : accepte l'ID en entrée et le convertit en instance JiraProject
     _project = serializers.PrimaryKeyRelatedField(
         source='project', 
         queryset=JiraProject.objects.all(),
@@ -42,11 +40,12 @@ class TicketSerializer(serializers.ModelSerializer):
             'description', 
             'status', 
             'priority', 
-            'assignedUser', # Ce nom correspond à la clé de votre dictionnaire ticket_data
+            'assignedUser', 
             'created_at', 
             'updated_at', 
+            'story_point',
             'start_date',
-            '_project'      # Ce nom correspond à la clé de votre dictionnaire ticket_data
+            '_project'      
         ]
 
 
@@ -55,4 +54,9 @@ class TicketSerializer(serializers.ModelSerializer):
 class JiraTicketHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = JiraTicketHistory
+        fields='__all__'
+
+class CoefficientSerializer(serializers.ModelSerializer):
+    class Meta:
+        model=Coefficient
         fields='__all__'

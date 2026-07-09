@@ -1,17 +1,21 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import JiraProject, JiraTicket ,JiraTicketHistory,AssignedUser
-from .serializers import JiraTicketHistorySerializer, TicketSerializer, AssignedUserSerializer, ProjectSerializer
+from .models import JiraProject, JiraTicket ,JiraTicketHistory,AssignedUser,Coefficient
+from .serializers import JiraTicketHistorySerializer, TicketSerializer, AssignedUserSerializer, ProjectSerializer,CoefficientSerializer
 import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
 
-requested_fields = ["webhookEvent", "issue.fields.customfield_10015","issue.fields.issuetype.name","issue.key","issue.fields.summary","issue.fields.creator.displayName","issue.fields.created", "issue.fields.priority.name","issue.fields.duedate", "issue.fields.assignee.displayName","issue.fields.updated","issue.fields.description","issue.fields.status.name","issue.fields.project.name","changelog.items"]
+requested_fields = ["webhookEvent", "issue.fields.customfield_10016","issue.fields.customfield_10015","issue.fields.issuetype.name","issue.key","issue.fields.summary","issue.fields.creator.displayName","issue.fields.created", "issue.fields.priority.name","issue.fields.duedate", "issue.fields.assignee.displayName","issue.fields.updated","issue.fields.description","issue.fields.status.name","issue.fields.project.name","changelog.items"]
 
 class JiraTicketViewSet(viewsets.ModelViewSet):
     queryset = JiraTicket.objects.all()
     serializer_class = TicketSerializer
+
+class CoefficientViewSet(viewsets.ModelViewSet):
+    queryset = Coefficient.objects.all()
+    serializer_class = CoefficientSerializer
 
 class HistoryViewSet(viewsets.ModelViewSet):
     queryset = JiraTicketHistory.objects.all()
@@ -77,6 +81,7 @@ def extractDataFromJson(request):
         'created_at': result.get('issue.fields.created'),
         'updated_at': result.get('issue.fields.updated'),
         'start_date': result.get('issue.fields.customfield_10015'),
+        'story_point':result.get('issue.fields.customfield_10016'),
         'description': result.get('issue.fields.description'),
         '_project': project_instance.pk if project_instance else None,
         'assignedUser': user_instance.pk if user_instance else None

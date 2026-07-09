@@ -1,16 +1,10 @@
-import numpy as np
 import pandas as pd
-from sqlalchemy import create_engine
+import numpy as np
 import re
-
-
-engine = create_engine('sqlite:///db.sqlite3')
-df1=pd.read_sql_table('select * from jira_JiraTicket', con=engine)
-
 
 def preprocess_data_model1 (df):
     #data needed is a textual summary of ticket with an estimation of it's quality score (from 0 to 2)
-    df_filtered= df[['summary','summary_quality_score']]
+    df_filtered= df[['summary']]
     df_filtered['clean_summary']=df_filtered['summary'].fillna('EMPTY').str.strip()
     df_filtered['has_prefixe']= df_filtered['clean_summary'].str.contains(r"^\[.*\]|^[^:]+:" , regex=True).astype(int)
     df_filtered['clean_summary2']=df_filtered['clean_summary'].apply(lambda x: re.sub(r'^\[.*?\]\s*' ,'', str(x)))
@@ -22,6 +16,7 @@ def preprocess_data_model1 (df):
 
 def preprocess_data_model2(df):
     #data needed is a textual description of tickets and an estimation of the quality score (from 0 to 8)
+    df_filtered= df[['description']]
     df_filtered['description']=df_filtered['description'].replace(r'^\s*$' ,np.nan , regex=True)
     df_filtered['clean_description']=df_filtered['description'].fillna('EMPTY').str.strip()
     df_filtered['description_lenght']=df_filtered['clean_description'].str.len()
@@ -44,10 +39,31 @@ def preprocess_data_model3(df):
 
 def preprocess_data_model4(df):
     #data needed is a number of days estimated to complete a ticket and story points and a rating of the logical relation between them
-    df_filtered=df[['estimated_time','start_date','story_point','storyPoint_estimatedTime_logical_relation_score']]
+    df_filtered=df[['estimated_time','start_date','story_point']]
     df_filtered['estimated_time']=pd.to_datetime(df_filtered['estimated_time'])
     df_filtered['start_date']=pd.to_datetime(df_filtered['start_date'])
     df_filtered['duration_estimate']=df_filtered['estimated_time']-df_filtered['start_date']
     df_filtered['duration_estimate']=df_filtered['duration_estimate'].dt.total_seconds() / 3600
 
     return df_filtered
+
+mock_data=[
+    {
+        "ticket_key":"SCRUM-200",
+        "summary":"[auth] fixing authentication endpoint",
+        "description":"as a user i want to be able to use jira authentication so that i can access my dashboard . given a mock data when i run a script then it should work",
+    },
+    {
+         "ticket_key":"SCRUM-201",
+        "summary":"fixing",
+        "description":"fixe db as discusted ",
+    }
+    ]
+
+if __name__=="__main__":
+    df_raw =pd.DataFrame(mock_data)
+    df1=preprocess_data_model2(df_raw)
+    df2=preprocess_data_model1(df_raw)
+
+    print(df1.to_string(index=False))
+    print(df2.to_string(index=False))
