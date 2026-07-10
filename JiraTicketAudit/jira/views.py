@@ -1,11 +1,13 @@
 from django.shortcuts import render
 from rest_framework import viewsets
-from .models import JiraProject, JiraTicket ,JiraTicketHistory,AssignedUser,Coefficient
-from .serializers import JiraTicketHistorySerializer, TicketSerializer, AssignedUserSerializer, ProjectSerializer,CoefficientSerializer
+from .models import JiraProject, JiraTicket ,JiraTicketHistory,AssignedUser ,ConfigurationData,Coefficient
+from .serializers import JiraTicketHistorySerializer, TicketSerializer, AssignedUserSerializer ,ProjectSerializer,ConfiguratinSerializer
 import json
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
+from users.models import JiraUser
+from users.serializer import UserSerializer
 
 requested_fields = ["webhookEvent", "issue.fields.customfield_10016","issue.fields.customfield_10015","issue.fields.issuetype.name","issue.key","issue.fields.summary","issue.fields.creator.displayName","issue.fields.created", "issue.fields.priority.name","issue.fields.duedate", "issue.fields.assignee.displayName","issue.fields.updated","issue.fields.description","issue.fields.status.name","issue.fields.project.name","changelog.items"]
 
@@ -13,9 +15,10 @@ class JiraTicketViewSet(viewsets.ModelViewSet):
     queryset = JiraTicket.objects.all()
     serializer_class = TicketSerializer
 
-class CoefficientViewSet(viewsets.ModelViewSet):
-    queryset = Coefficient.objects.all()
-    serializer_class = CoefficientSerializer
+class ConfigurationViewSet(viewsets.ModelViewSet):
+    queryset = ConfigurationData.objects.all()
+    serializer_class = ConfiguratinSerializer
+
 
 class HistoryViewSet(viewsets.ModelViewSet):
     queryset = JiraTicketHistory.objects.all()
@@ -60,7 +63,7 @@ def extractDataFromJson(request):
     if project_name:
         project_instance, created = JiraProject.objects.get_or_create(
             project_name=project_name,
-            defaults={'project_manager': None}
+            defaults={'project_manager': None }
         )
 
     assignee_name = result.get('issue.fields.assignee.displayName')

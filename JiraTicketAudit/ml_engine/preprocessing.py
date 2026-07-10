@@ -6,10 +6,11 @@ import re
 
 engine = create_engine('sqlite:///db.sqlite3')
 df1=pd.read_sql_table('select * from jira_JiraTicket', con=engine)
+df2= pd.read_sql_table('select * from jira_ConfigurationData' , con=engine)
 
 
 def preprocess_data_model1 (df):
-    #data needed is a textual summary of ticket with an estimation of it's quality score (from 0 to 2)
+    #data needed is a textual summary of ticket with an estimation of it's quality score
     df_filtered= df[['summary','summary_quality_score']]
     df_filtered['clean_summary']=df_filtered['summary'].fillna('EMPTY').str.strip()
     df_filtered['has_prefixe']= df_filtered['clean_summary'].str.contains(r"^\[.*\]|^[^:]+:" , regex=True).astype(int)
@@ -21,7 +22,9 @@ def preprocess_data_model1 (df):
     return df_filtered
 
 def preprocess_data_model2(df):
-    #data needed is a textual description of tickets and an estimation of the quality score (from 0 to 8)
+    #data needed is a textual description of tickets and an estimation of the quality score 
+    df_filtered= df[['description','description_quality_score']]
+
     df_filtered['description']=df_filtered['description'].replace(r'^\s*$' ,np.nan , regex=True)
     df_filtered['clean_description']=df_filtered['description'].fillna('EMPTY').str.strip()
     df_filtered['description_lenght']=df_filtered['clean_description'].str.len()
@@ -35,7 +38,7 @@ def preprocess_data_model2(df):
 
 def preprocess_data_model3(df):
     # data needed is a numerically configured priority of the ticket and a starting date and a rating of the 
-    # logical relation between the first two (between 0 and 4)
+    # logical relation between the first two 
     df_filtered= df[['priority','start_date','startingDate_priority_logical_relation_score']]
     df_filtered['priority']= df_filtered['priority'].map({'Highest': 5, 'High': 4, 'Medium': 3, 'Low': 2, 'Lowest': 1})
     df_filtered['start_date']= pd.to_datetime(df_filtered['start_date'])

@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import JiraUser
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.decorators import login_not_required
 
 User=get_user_model()
 
@@ -11,13 +12,20 @@ class UserSerializer(serializers.ModelSerializer):
         fields=['username','email','password']
         extra_kwargs = {'password': {'write_only': True}}
 
+    @login_not_required
+    def create (self , validated_data):
+        super.create(validated_data)
+
+
 class JiraUserSerializer(serializers.ModelSerializer):
     user = UserSerializer()
     
     class Meta:
         model = JiraUser
-        fields = ['id', 'user', 'jira_key']
+        fields = ['id', 'user', 'jira_Key']
 
+
+    @login_not_required
     def create(self, validated_data):
         user_data = validated_data.pop('user')
         
@@ -25,4 +33,6 @@ class JiraUserSerializer(serializers.ModelSerializer):
         
         jira_user = JiraUser.objects.create(user=django_user, **validated_data)
         return jira_user
+    
+
          

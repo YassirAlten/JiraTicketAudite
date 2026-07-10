@@ -1,6 +1,7 @@
 from django.db import models
 from users.models import JiraUser
 
+
 class AssignedUser (models.Model):
     fullName = models.CharField(max_length=100, null=False, blank=False , unique=True)
     email = models.EmailField(max_length=100, null=True, blank=True)
@@ -44,7 +45,10 @@ class Coefficient(models.Model):
     estimated_time_check_coeffichient=models.IntegerField(null=False,blank=False)
 
 
-
+class ConfigurationData (models.Model):
+    coefficient=models.ForeignKey('Coefficient',on_delete=models.CASCADE,null=False,blank=False)
+    configuration_json=models.CharField(null=False,blank=False)
+    
    
 
 

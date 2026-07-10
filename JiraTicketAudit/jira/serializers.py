@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from .models import AssignedUser, JiraTicket, JiraTicketHistory, JiraProject , Coefficient
+from .models import AssignedUser, JiraTicket, JiraTicketHistory, JiraProject ,ConfigurationData,Coefficient
+
 
 class AssignedUserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -52,11 +53,39 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class JiraTicketHistorySerializer(serializers.ModelSerializer):
+
     class Meta:
         model = JiraTicketHistory
         fields='__all__'
 
 class CoefficientSerializer(serializers.ModelSerializer):
+    project= ProjectSerializer()
     class Meta:
         model=Coefficient
-        fields='__all__'
+        fields=['project','summary_coefficient','description_coefficient','priority_check_coefficient','estimated_time_check_coeffichient']
+
+
+
+
+class ConfiguratinSerializer(serializers.ModelSerializer):
+    coefficient=CoefficientSerializer()
+    class Meta:
+        model=ConfigurationData
+        fields=[
+            'coefficient',
+            'configuration_json'
+        ]
+    def create (self , validatedData):
+        coefficient=validatedData.pop('coefficient')
+        projectData=coefficient.pop('project')
+
+        created_project , _=JiraProject.objects.get_or_create( project_name=projectData['project_name'],defaults={'project_manager': projectData['project_manager']})
+        createdCoefficient=Coefficient.objects.create(project=created_project, **coefficient)
+        
+        createdConfiguration=ConfigurationData.objects.create(
+            coefficient=createdCoefficient,
+            **validatedData
+        )
+        return createdConfiguration
+
+
