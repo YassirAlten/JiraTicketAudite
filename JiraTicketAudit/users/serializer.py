@@ -12,9 +12,6 @@ class UserSerializer(serializers.ModelSerializer):
         fields=['username','email','password']
         extra_kwargs = {'password': {'write_only': True}}
 
-    @login_not_required
-    def create (self , validated_data):
-        super.create(validated_data)
 
 
 class JiraUserSerializer(serializers.ModelSerializer):
