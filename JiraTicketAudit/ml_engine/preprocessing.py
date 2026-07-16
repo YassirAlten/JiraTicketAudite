@@ -6,20 +6,20 @@ import json
 
 
 
-engine = create_engine('sqlite:///db.sqlite3')
-query = """
-SELECT * 
-FROM jira_JiraTicket a 
-JOIN ConfigurationData b 
-  ON a.project = b.coefficient.project.id
-"""
+# engine = create_engine('sqlite:///db.sqlite3')
+# query = """
+# SELECT * 
+# FROM jira_JiraTicket a 
+# JOIN ConfigurationData b 
+#   ON a.project = b.coefficient.project.id
+# """
 
-df1 = pd.read_sql_query(query, con=engine)
+# df1 = pd.read_sql_query(query, con=engine)
 
 
 def preprocess_data_model1 (df):
     #data needed is a textual summary of ticket with an estimation of it's quality score
-    df_filtered= df[['summary','summary_quality_score','ticket_type']]
+    df_filtered= df[['summary','summary_quality_score','ticket_type','configuration_json']]
     df_filtered['clean_summary']=df_filtered['summary'].fillna('EMPTY').str.strip()
     df_filtered['summary_lenght']=df_filtered['clean_summary'].str.len()
     df_filtered['is_lenght_good']= df_filtered['summary_lenght'].between(10,50).astype(int)
@@ -42,14 +42,16 @@ def preprocess_data_model1 (df):
     n_present_list = []
 
     for index, row in df_filtered.iterrows():
-        row_text = str(row['clean_summary']).lower()
+        row_text = str(row['summary']).lower()
+        # print(row_text)
         
         config_dict = row['parsed_config']  
-        
-        desc_block = config_dict.get('summary', {}) 
+        # print(config_dict)
+        summary_block = config_dict.get('summary', {}) 
+        print(summary_block)
 
-        ticket_type=desc_block.get(row['ticket_type'],{})
-        
+        ticket_type=summary_block.get(row['ticket_type'],{})
+        print(ticket_type)
        
         mandatory_fields = ticket_type.get('mandatory_fields', {})
         niceToHave_fields = ticket_type.get('niceToHave_fields', {})
@@ -88,31 +90,33 @@ def preprocess_data_model1 (df):
     df_filtered['niceToHave_present_keywords'] = n_present_list
             
     final_cols = [
-        'description', 'description_lenght', 'is_lenght_good',
+        'summary', 'summary_lenght', 'is_lenght_good',
         'mandatory_available_keywords', 'mandatory_present_keywords',
         'niceToHave_available_keywords', 'niceToHave_present_keywords'
     ]
     return df_filtered[final_cols]
 
 def preprocess_data_model2(df1):
-    df_filtered = df1[['description','ticket_type','description_quality_score', 'configuration_json']].copy()
+    # 1. Sélection et copie pour éviter le SettingWithCopyWarning
+    df_filtered = df1[['description','ticket_type','description_quality_score', 'configuration_json']]
 
+    # 2. Nettoyage de la description du ticket
     df_filtered['description'] = df_filtered['description'].replace(r'^\s*$', np.nan, regex=True)
-    df_filtered['clean_description'] = df_filtered['description'].fillna('EMPTY').str.strip()
+    df_filtered['clean_description'] = df_filtered['description'].fillna('')
     df_filtered['description_lenght'] = df_filtered['clean_description'].str.len()
     df_filtered['is_lenght_good'] = df_filtered['description_lenght'].gt(50).astype(int)
 
+    # 3. Fonction de nettoyage de la chaîne de texte JSON (LIGNE PAR LIGNE)
     def nettoyer_et_charger_json(val):
         
         try:
             return json.loads(str(val))
         except (json.JSONDecodeError, TypeError):
-            return """{"summary":{"tache":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"bug":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"story":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"epic":{"mandatory_fields": "", "niceToHave_fields": ""} }}"""
+            return {"description": {"mandatory_fields": "", "niceToHave_fields": ""}}
 
+    # 4. Application du nettoyage ligne par ligne sur la colonne
     df_filtered['parsed_config'] = df_filtered['configuration_json'].apply(nettoyer_et_charger_json)
+    print(df_filtered['parsed_config'])
 
     m_available_list = []
     m_present_list = []
@@ -124,9 +128,11 @@ def preprocess_data_model2(df1):
         
         config_dict = row['parsed_config']  
         
+        # Extraction sécurisée des blocs JSON
         desc_block = config_dict.get('description', {}) 
 
         ticket_type=desc_block.get(row['ticket_type'],{})
+
         
        
         mandatory_fields = ticket_type.get('mandatory_fields', {})
@@ -147,6 +153,7 @@ def preprocess_data_model2(df1):
         m_available_list.append(m_available_keywords_count)
         m_present_list.append(m_keyword_count)
 
+        # --- Traitement des Mots-clés Optionnels ---
         n_keyword_count = 0
         n_available_keywords_count = 0
         if isinstance(niceToHave_fields, dict):
@@ -160,15 +167,17 @@ def preprocess_data_model2(df1):
         n_available_list.append(n_available_keywords_count)
         n_present_list.append(n_keyword_count)
 
+    # 7. Assignation des listes de même longueur aux colonnes
     df_filtered['mandatory_available_keywords'] = m_available_list
     df_filtered['mandatory_present_keywords'] = m_present_list
     df_filtered['niceToHave_available_keywords'] = n_available_list
     df_filtered['niceToHave_present_keywords'] = n_present_list
             
+    # 8. Retour des colonnes finales requises
     final_cols = [
-        'description', 'description_lenght', 'is_lenght_good',
+        'clean_description', 'description_lenght', 'is_lenght_good',
         'mandatory_available_keywords', 'mandatory_present_keywords',
-        'niceToHave_available_keywords', 'niceToHave_present_keywords'
+        'niceToHave_available_keywords', 'niceToHave_present_keywords','description_quality_score'
     ]
     return df_filtered[final_cols]
 

@@ -3,6 +3,7 @@ import numpy as np
 import re
 import json
 
+
 def preprocess_data_model1 (df):
     #data needed is a textual summary of ticket with an estimation of it's quality score
     df_filtered= df[['summary','ticket_type','configuration_json']]
@@ -85,13 +86,14 @@ def preprocess_data_model1 (df):
 
 def preprocess_data_model2(df1):
     # 1. Sélection et copie pour éviter le SettingWithCopyWarning
-    df_filtered = df1[['description','ticket_type', 'configuration_json']].copy()
+    df_filtered = df1[['description','ticket_type','description_quality_score', 'configuration_json']]
 
     # 2. Nettoyage de la description du ticket
     df_filtered['description'] = df_filtered['description'].replace(r'^\s*$', np.nan, regex=True)
-    df_filtered['clean_description'] = df_filtered['description'].fillna('EMPTY').str.strip()
+    df_filtered['clean_description'] = df_filtered['description'].fillna('')
     df_filtered['description_lenght'] = df_filtered['clean_description'].str.len()
     df_filtered['is_lenght_good'] = df_filtered['description_lenght'].gt(50).astype(int)
+    df_filtered= df_filtered.fillna('')
 
     # 3. Fonction de nettoyage de la chaîne de texte JSON (LIGNE PAR LIGNE)
     def nettoyer_et_charger_json(val):
@@ -103,6 +105,7 @@ def preprocess_data_model2(df1):
 
     # 4. Application du nettoyage ligne par ligne sur la colonne
     df_filtered['parsed_config'] = df_filtered['configuration_json'].apply(nettoyer_et_charger_json)
+    print(df_filtered['parsed_config'])
 
     m_available_list = []
     m_present_list = []
@@ -163,7 +166,7 @@ def preprocess_data_model2(df1):
     final_cols = [
         'description', 'description_lenght', 'is_lenght_good',
         'mandatory_available_keywords', 'mandatory_present_keywords',
-        'niceToHave_available_keywords', 'niceToHave_present_keywords'
+        'niceToHave_available_keywords', 'niceToHave_present_keywords','description_quality_score'
     ]
     return df_filtered[final_cols]
 
@@ -303,11 +306,11 @@ mock_data=[
     ]
 
 if __name__=="__main__":
-    df_raw =pd.DataFrame(mock_data)
+    df_raw =pd.read_json(r'C:\Users\yjamal\Desktop\JiraTicketAudit\JiraTicketAudite\JiraTicketAudit\ml_engine\m_data.json')
     df1=preprocess_data_model2(df_raw)
-    df2=preprocess_data_model1(df_raw)
+    # df2=preprocess_data_model1(df_raw)
 
 
     print(df1.to_string(index=False))
-    print(df2.to_string(index=False))
+    # print(df2.to_string(index=False))
 
