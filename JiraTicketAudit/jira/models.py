@@ -33,8 +33,7 @@ class JiraProject(models.Model):
 
 class JiraTicketHistory(models.Model):
     ticket = models.ForeignKey(JiraTicket, on_delete=models.CASCADE, null=False, blank=False)
-    managerScore = models.FloatField(null=True, blank=True)
-    # modelScore = models.FloatField(null=False, blank=False)
+    modelScore = models.FloatField(null=False, blank=False)
 
 
 class Coefficient(models.Model):

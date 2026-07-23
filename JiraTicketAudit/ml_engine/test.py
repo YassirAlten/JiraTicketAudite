@@ -174,9 +174,9 @@ def preprocess_data_model3(df1):
     ]
     return df_filtered[final_cols]
 
-model_path1='ml_engine/saved_models/text_quality_model6.joblib'
+model_path1='ml_engine/saved_models/text_quality_model8.joblib'
 loaded_pipeline1= joblib.load(model_path1)
-model_path2='ml_engine/saved_models/text_quality_model7.joblib'
+model_path2='ml_engine/saved_models/text_quality_model9.joblib'
 loaded_pipeline2=joblib.load(model_path2)
 
 

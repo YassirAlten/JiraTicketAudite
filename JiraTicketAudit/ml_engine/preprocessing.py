@@ -32,37 +32,31 @@ def preprocess_data_model1 (df):
     #data needed is a textual summary of ticket with an estimation of it's quality score
     df_filtered= df[['summary','summary_quality_score','ticket_type','configuration_json']]
     df_filtered['clean_summary']=df_filtered['summary'].fillna('EMPTY').str.strip()
-    df_filtered['summary_lenght']=df_filtered['clean_summary'].str.len()
-    df_filtered['is_lenght_good']= df_filtered['summary_lenght'].between(10,50).astype(int)
+    # df_filtered['summary_lenght']=df_filtered['clean_summary'].str.len()
+    # df_filtered['is_lenght_good']= df_filtered['summary_lenght'].between(10,50).astype(int)
 
     def nettoyer_et_charger_json(val):
         
         try:
             return json.loads(str(val))
         except (json.JSONDecodeError, TypeError):
-            return """{"summary":{"tache":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"bug":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"story":{"mandatory_fields": "", "niceToHave_fields": ""},
-            {"epic":{"mandatory_fields": "", "niceToHave_fields": ""} }}"""
+            return {"summary": {"mandatory_fields": "", "niceToHave_fields": ""}}
 
     df_filtered['parsed_config'] = df_filtered['configuration_json'].apply(nettoyer_et_charger_json)
-
-    m_available_list = []
-    m_present_list = []
-    n_available_list = []
-    n_present_list = []
+    
+    m_list = []
+    n_list = []
+    resultat=[]
 
     for index, row in df_filtered.iterrows():
-        row_text = str(row['summary']).lower()
-        # print(row_text)
+        row_text = str(row['clean_summary']).lower()
         
         config_dict = row['parsed_config']  
-        # print(config_dict)
-        summary_block = config_dict.get('summary', {}) 
-        print(summary_block)
+        desc_block = config_dict.get('summary', {}) 
 
-        ticket_type=summary_block.get(row['ticket_type'],{})
-        print(ticket_type)
+        ticket_type=desc_block.get(row['ticket_type'],{})
+
+        
        
         mandatory_fields = ticket_type.get('mandatory_fields', {})
         niceToHave_fields = ticket_type.get('niceToHave_fields', {})
@@ -76,12 +70,16 @@ def preprocess_data_model1 (df):
                 m_available_keywords_count += len(keywords)
                 for keyword in keywords:
                     
-                    if re.search(r'\b' + re.escape(keyword) + r'\b', row_text):
+                    if find_keyword_with_typos(row_text,keyword):
                         m_keyword_count += 1
 
-        m_available_list.append(m_available_keywords_count)
-        m_present_list.append(m_keyword_count)
+        if m_available_keywords_count != 0 :
+            m_list.append(m_keyword_count/m_available_keywords_count)
+        else:
+            m_list.append(0)
+        
 
+        # --- Traitement des Mots-clés Optionnels ---
         n_keyword_count = 0
         n_available_keywords_count = 0
         if isinstance(niceToHave_fields, dict):
@@ -89,21 +87,29 @@ def preprocess_data_model1 (df):
                 keywords = [kw.strip().lower() for kw in str(v).split(',') if kw.strip()]
                 n_available_keywords_count += len(keywords)
                 for keyword in keywords:
-                    if re.search(r'\b' + re.escape(keyword) + r'\b', row_text):
+                    if find_keyword_with_typos(row_text,keyword):
                         n_keyword_count += 1
                 
-        n_available_list.append(n_available_keywords_count)
-        n_present_list.append(n_keyword_count)
+        if n_available_keywords_count != 0 :
+            n_list.append(n_keyword_count/n_available_keywords_count)
+        else:
+            n_list.append(0)
+        if n_available_keywords_count != 0 and m_available_keywords_count != 0 :
+            resultat.append(((m_keyword_count/m_available_keywords_count)*0.7 +(n_keyword_count/n_available_keywords_count)*0.3)*5)
+        else :
+            resultat.append(0)
+  
 
-    df_filtered['mandatory_available_keywords'] = m_available_list
-    df_filtered['mandatory_present_keywords'] = m_present_list
-    df_filtered['niceToHave_available_keywords'] = n_available_list
-    df_filtered['niceToHave_present_keywords'] = n_present_list
+    # 7. Assignation des listes de même longueur aux colonnes
+    df_filtered['mandatory_keywords'] = m_list
+    df_filtered['niceToHave_keywords'] = n_list
+    df_filtered['result']=resultat
             
     final_cols = [
-        'summary', 'summary_lenght', 'is_lenght_good',
-        'mandatory_available_keywords', 'mandatory_present_keywords',
-        'niceToHave_available_keywords', 'niceToHave_present_keywords'
+        'clean_summary', 
+        'mandatory_keywords',
+        'niceToHave_keywords',
+        'result',
     ]
     return df_filtered[final_cols]
 
@@ -222,7 +228,7 @@ def preprocess_data_model4(df):
 
 def preprocess_data_model5(df1):
     # 1. Sélection et copie pour éviter le SettingWithCopyWarning
-    df_filtered = df1[['description','ticket_type','description_quality_score', 'configuration_json']]
+    df_filtered = df1[['ticket_key','description','ticket_type','description_quality_score', 'configuration_json']]
 
     # 2. Nettoyage de la description du ticket
     df_filtered['description'] = df_filtered['description'].replace(r'^\s*$', np.nan, regex=True)
@@ -244,13 +250,13 @@ def preprocess_data_model5(df1):
 
     m_list = []
     n_list = []
+    resultat=[]
 
     for index, row in df_filtered.iterrows():
         row_text = str(row['clean_description']).lower()
         
         config_dict = row['parsed_config']  
         
-        # Extraction sécurisée des blocs JSON
         desc_block = config_dict.get('description', {}) 
 
         ticket_type=desc_block.get(row['ticket_type'],{})
@@ -271,14 +277,12 @@ def preprocess_data_model5(df1):
                     
                     if find_keyword_with_typos(row_text,keyword):
                         m_keyword_count += 1
-
         if m_available_keywords_count != 0 :
             m_list.append(m_keyword_count/m_available_keywords_count)
         else:
-            m_list.append(0)
+            m_list.append(3)
         
 
-        # --- Traitement des Mots-clés Optionnels ---
         n_keyword_count = 0
         n_available_keywords_count = 0
         if isinstance(niceToHave_fields, dict):
@@ -292,19 +296,39 @@ def preprocess_data_model5(df1):
         if n_available_keywords_count != 0 :
             n_list.append(n_keyword_count/n_available_keywords_count)
         else:
-            n_list.append(0)
+            n_list.append(3)
+
+        if n_available_keywords_count != 0 and m_available_keywords_count != 0 :
+            resultat.append(((m_keyword_count/m_available_keywords_count)*0.7 +(n_keyword_count/n_available_keywords_count)*0.3)*5)
+        else :
+            resultat.append(0)
   
 
     # 7. Assignation des listes de même longueur aux colonnes
     df_filtered['mandatory_keywords'] = m_list
     df_filtered['niceToHave_keywords'] = n_list
+    df_filtered['result']=resultat
     
             
     # 8. Retour des colonnes finales requises
     final_cols = [
-        'clean_description',
+        # 'clean_description',
         # 'description_lenght', 'is_lenght_good',
         'mandatory_keywords', 'niceToHave_keywords',
-        'description_quality_score'
+        'result'
+
+    ]
+    return df_filtered[final_cols]
+
+
+def preprocess_data_model6(df1):
+    df_filtered = df1[['summary','is_summary_content_good']]
+
+    df_filtered['summary'] = df_filtered['summary'].replace(r'^\s*$', np.nan, regex=True)
+    df_filtered['clean_summary'] = df_filtered['summary'].fillna('')
+      
+    final_cols = [
+        'clean_summary',
+        'is_summary_content_good'
     ]
     return df_filtered[final_cols]

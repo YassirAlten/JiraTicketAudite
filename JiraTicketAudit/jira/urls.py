@@ -14,5 +14,6 @@ urlpatterns = [
     path('Configuration/<int:pk>/', ConfigurationViewSet.as_view({'get': 'retrieve','put': 'update', 'delete': 'destroy'}), name='configuration-details'),
     path('assigned_users/<int:pk>/', AssignedUserViewSet.as_view({'get': 'retrieve', 'put': 'update', 'delete': 'destroy'}), name='user-detail'),
     path('extract/', views.extractDataFromJson, name='extract-data'),
+    path('predict/', views.predict_ticket_quality, name='predict'),
 
 ]

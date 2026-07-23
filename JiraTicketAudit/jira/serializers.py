@@ -34,6 +34,7 @@ class TicketSerializer(serializers.ModelSerializer):
     class Meta:
         model = JiraTicket
         fields = [
+            'id',
             'ticket_key', 
             'ticket_type', 
             'summary', 
